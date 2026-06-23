@@ -4,6 +4,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import asyncio
 import logging
+import os
+from aiohttp import web
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
@@ -18,6 +20,19 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+async def handle_ping(request):
+    return web.Response(text="Bot is running!")
+
+async def start_web_server():
+    app = web.Application()
+    app.router.add_get('/', handle_ping)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get("PORT", 10000))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    logger.info(f"🌐 Fake web server started on port {port} for Render")
 
 
 async def main():
@@ -34,6 +49,9 @@ async def main():
     # Admin router birinchi (priority)
     dp.include_router(admin_router)
     dp.include_router(user_router)
+
+    # Render.com uchun web serverni ishga tushirish
+    await start_web_server()
 
     logger.info("✅ Bot ishga tushdi!")
     await dp.start_polling(bot, allowed_updates=["message", "callback_query"])
